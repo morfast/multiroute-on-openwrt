@@ -3,6 +3,7 @@
 #!/bin/sh
 
 source /etc/profile
+#set -x
 
 if [ $# -eq 1 ]; then
 	PPP_NUM=$1
@@ -10,39 +11,60 @@ else
 	PPP_NUM=10
 fi
 
-echo ${PPP_NUM} connections to handle
+#set -x
 
 echo -1 > /proc/sys/net/ipv4/rt_cache_rebuild_count
 
+echo ${PPP_NUM} connections to handle
+echo timeout: $(( PPP_NUM / 2 + 2))
 count=0
 while :
 do
     NLINE=$(ifconfig | grep pppoe | wc -l)
     if [ ${NLINE} -eq ${PPP_NUM} ]; then
+        echo ${NLINE} connections established
+    	SUCCESS_LINKS=$(ifconfig | grep pppoe | awk '{print $1}')
         break
     fi  
     sleep 1
     count=$(( count + 1 ))
-    if [ $count -gt 10 ]; then
-    	if [ ${PPP_NUM} -le 1 ]; then
+    if [ $count -gt $(( PPP_NUM / 2 + 2)) ]; then
+    	if [ ${NLINE} -le 0 ]; then
+    	    echo "no connection established, exit"
     	    pkill pppd
     	    pkill -9 pppd
-    	    pkill -9 lockfile
+    	    pkill initppp
     	    pkill -f light.sh
     	    /root/light.sh off
     	    exit 1
-    	else
-    	    pkill lockfile
-    	    sleep 1
-    	    pkill -9 lockfile
-    	    exec /root/ppp.sh $(( PPP_NUM - 3 ))
-    	    exit 0
     	fi
+        NLINE=$(ifconfig | grep pppoe | wc -l)
+        echo ${NLINE} connections established
+    	SUCCESS_LINKS=$(ifconfig | grep pppoe | awk '{print $1}')
+    	pkill initppp
+    	break
+    	
+#    	if [ ${PPP_NUM} -le 1 ]; then
+#    	    pkill pppd
+#    	    pkill -9 pppd
+#    	    pkill -9 lockfile
+#    	    pkill -f light.sh
+#    	    /root/light.sh off
+#    	    exit 1
+#    	else
+#    	    pkill lockfile
+#    	    sleep 1
+#    	    pkill -9 lockfile
+#    	    exec /root/ppp.sh $(( PPP_NUM - 3 ))
+#    	    exit 0
+#    	fi
+
     fi
 done
+#set +x
                         
 
-ROUTECMD="ip route add default \\
+ROUTECMD="ip route replace default \\
           "
           
 iptables -t nat -F
@@ -56,7 +78,14 @@ ip rule add prio 32767 from all lookup default
 
 for i in $(seq -w 01 ${PPP_NUM})
 do
-
+    echo $SUCCESS_LINKS | grep -q wan${i}
+    if [ $? -ne 0 ]; then
+    	pkill -f pppoe-wan${i}
+    	sleep 1
+    	pkill -9 -f pppoe-wan${i}
+    	continue
+    fi
+    
     IP_PPP=$(ip route | grep pppoe-wan${i} | awk '{print $9}')
 
     echo -n "modify routing table ... "
@@ -80,8 +109,8 @@ do
 
 done
 
-#ip route del default
 eval "${ROUTECMD}" && echo "DONE"
 pkill -f light.sh
 /root/light.sh on
 
+set +x

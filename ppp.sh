@@ -1,13 +1,11 @@
 #!/bin/sh
 
 #exit 0
+#set -x
 
 /root/light.sh blink &
 
 source /etc/profile
-
-PPP_SYNC_FILE="/tmp/ppp_sync"
-PPP_NUM_FILE="/tmp/ppp_num"
 
 if [ $# -eq 1 ]; then
 	PPP_NUM=$1
@@ -24,11 +22,8 @@ pkill pppd && sleep 2
 pkill -9 pppd && sleep 1
 echo "Done"
 
-:> /tmp/ppp_sync
-echo -ne '\x00' > ${PPP_SYNC_FILE}
-echo $PPP_NUM > ${PPP_NUM_FILE}
 
-/root/lockfile &
+/root/initppp ${PPP_NUM} &
 
 for i in $(seq -w 01 $PPP_NUM)
 do
@@ -37,5 +32,6 @@ done
 
 /root/multiroute.sh ${PPP_NUM}
 
+set +x
 exit 0
 
