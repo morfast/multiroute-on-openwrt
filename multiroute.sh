@@ -16,7 +16,8 @@ fi
 echo -1 > /proc/sys/net/ipv4/rt_cache_rebuild_count
 
 echo ${PPP_NUM} connections to handle
-echo timeout: $(( PPP_NUM / 2 + 2))
+TIMEOUT=$(( PPP_NUM / 5 + 5))
+echo timeout: ${TIMEOUT}
 count=0
 while :
 do
@@ -28,7 +29,7 @@ do
     fi  
     sleep 1
     count=$(( count + 1 ))
-    if [ $count -gt $(( PPP_NUM / 2 + 2)) ]; then
+    if [ $count -gt ${TIMEOUT} ]; then
     	if [ ${NLINE} -le 0 ]; then
     	    echo "no connection established, exit"
     	    pkill pppd

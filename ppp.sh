@@ -3,7 +3,7 @@
 #exit 0
 #set -x
 
-/root/light.sh blink &
+/root/light.sh blink 400 &
 
 source /etc/profile
 
@@ -13,7 +13,12 @@ else
 	PPP_NUM=10
 fi
 
-echo ${PPP_NUM} connection will be accomplished
+if [ ${PPP_NUM} -ge 1 ] && [ ${PPP_NUM} -le 30 ]; then
+	echo ${PPP_NUM} connection will be accomplished
+else
+	echo "number out of range"
+	exit 1
+fi
 
 /root/macvlan.sh ${PPP_NUM} 
 
