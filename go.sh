@@ -14,7 +14,7 @@ if [ $# -eq 1 ]; then
 fi
 
 if [ ${PPP_NUM} -ge 1 ] && [ ${PPP_NUM} -le 30 ]; then
-	echo ${PPP_NUM} connection will be accomplished
+	echo "trying to establish ${PPP_NUM} connections ... "
 else
 	echo "number of connections out of range"
 	exit 1
@@ -35,7 +35,7 @@ echo "Done"
 
 for i in $(seq -w 01 $PPP_NUM)
 do
-echo -n "Establish connection ${i} ... "
+echo -n "executing pppd for connection ${i} ... "
 ./pppd plugin /usr/lib/pppd/2.4.4/rp-pppoe.so mtu 1492 mru 1492 nic-eth${i} persist \
 usepeerdns user ${USERNAME} password ${PASSWORD} ipparam wan ifname ${PPP_IF_PREFIX}${i} nodetach &
 echo "done"

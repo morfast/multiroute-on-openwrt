@@ -10,7 +10,7 @@ fi
 # disable the routing cache
 echo -1 > /proc/sys/net/ipv4/rt_cache_rebuild_count
 
-echo ${PPP_NUM} connections to handle
+echo "testing ${PPP_NUM} connections"
 TIMEOUT=$(( PPP_NUM / 2 + 9))
 echo timeout: ${TIMEOUT}
 
@@ -28,7 +28,7 @@ do
     count=$(( count + 1 ))
     if [ $count -gt ${TIMEOUT} ]; then
     	if [ ${NLINE} -le 0 ]; then
-    	    echo "no connection established, trying with less connection number"
+    	    echo "No connection established, trying with less connection number"
     	    pkill pppd
     	    pkill initppp
     	    pkill -f light.sh
