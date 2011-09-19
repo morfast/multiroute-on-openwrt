@@ -99,6 +99,13 @@ do
 
 done
 
+echo -n "adding route for DNS ... "
+for dns_server in ${DNS}
+do
+    ip route add ${dns_server} via ${PPPGATE}
+done
+echo "OK"
+
 ip route flush cache
 
 echo "Adding default route ... "
