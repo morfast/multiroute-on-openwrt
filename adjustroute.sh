@@ -12,42 +12,8 @@ else
 fi
 
 
-echo -1 > /proc/sys/net/ipv4/rt_cache_rebuild_count
 
-echo ${PPP_NUM} connections to handle
-TIMEOUT=$(( PPP_NUM / 2 + 9))
-echo timeout: ${TIMEOUT}
-count=0
-while :
-do
-    NLINE=$(ifconfig | grep pppoe | wc -l)
-    if [ ${NLINE} -eq ${PPP_NUM} ]; then
-        echo ${NLINE} connections established
-    	SUCCESS_LINKS=$(ip route | grep 'pppoe.*pro' | awk '{print $3}')
-        break
-    fi  
-    sleep 1
-    count=$(( count + 1 ))
-    if [ $count -gt ${TIMEOUT} ]; then
-    	if [ ${NLINE} -le 0 ]; then
-    	    echo "no connection established, exit"
-    	    pkill pppd
-    	    pkill -9 pppd
-    	    pkill initppp
-    	    pkill -f light.sh
-    	    ./go.sh $((PPP_NUM-1))
-    	    exit 1
-    	fi
-        NLINE=$(ifconfig | grep pppoe | wc -l)
-        echo ${NLINE} connections established
-    	SUCCESS_LINKS=$(ip route | grep 'pppoe.*pro' | awk '{print $3}')
-    	pkill initppp
-    	break
-    	
-    fi
-done
-#set +x
-                        
+SUCCESS_LINKS=$(ip route | grep 'pppoe.*pro' | awk '{print $3}')
 
 ROUTECMD="ip route replace default \\
           "
@@ -102,7 +68,6 @@ do
 done
 
 eval "${ROUTECMD}" && echo "DONE"
-./light.sh on
 
 ip route flush cache
 

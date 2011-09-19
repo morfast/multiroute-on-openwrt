@@ -3,14 +3,17 @@
 #exit 0
 #set -x
 
-/root/light.sh blink 400 &
+USER="18959217916"
+PASS="726622"
 
-source /etc/profile
+./light.sh blink 400 &
+
+source /etc/profile &> /dev/null
 
 if [ $# -eq 1 ]; then
 	PPP_NUM=$1
 else
-	PPP_NUM=10
+	PPP_NUM=5
 fi
 
 if [ ${PPP_NUM} -ge 1 ] && [ ${PPP_NUM} -le 30 ]; then
@@ -20,22 +23,26 @@ else
 	exit 1
 fi
 
-/root/macvlan.sh ${PPP_NUM} 
+./macvlan.sh ${PPP_NUM} 
 
 echo -n "Killing existing pppd ..."
-pkill pppd && sleep 2
+pkill pppd && sleep 4
 pkill -9 pppd && sleep 1
+pkill initppp && sleep 2
+pkill -9 initppp && sleep 1
+pkill pppd && sleep 2
 echo "Done"
 
 
-/root/initppp ${PPP_NUM} &
+./initppp ${PPP_NUM} &
 
 for i in $(seq -w 01 $PPP_NUM)
 do
-/root/pppd plugin rp-pppoe.so mtu 1492 mru 1492 nic-eth${i} persist usepeerdns user 480071448@fzjslan password xi570706 ipparam wan ifname pppoe-wan${i} nodetach &
+./pppd plugin /usr/lib/pppd/2.4.4/rp-pppoe.so mtu 1492 mru 1492 nic-eth${i} persist usepeerdns user ${USER} password ${PASS} ipparam wan ifname pppoe-wan${i} nodetach &
 done
 
-/root/multiroute.sh ${PPP_NUM}
+sleep 2
+./multiroute.sh ${PPP_NUM}
 
 set +x
 exit 0

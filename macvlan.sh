@@ -14,7 +14,8 @@ done
 for i in $(seq -w 01 $1)
 do
     ifconfig | grep -q eth${i} && continue
-    ip link add link eth1 eth${i} type macvlan
+    ip link add link eth1.1 eth${i} type macvlan
     ifconfig eth${i} hw ether 40:16:9F:36:B1:${i}
     ifconfig eth${i} up 
+    echo ech$i
 done

@@ -1,5 +1,7 @@
 #!/bin/sh
 
+exit 0
+
 qssgreen="/sys/devices/platform/leds-gpio/leds/tl-mr3x20:green:qss"
 sysgreen="/sys/devices/platform/leds-gpio/leds/tl-mr3x20:green:system"
 
