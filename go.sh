@@ -41,7 +41,8 @@ usepeerdns user ${USERNAME} password ${PASSWORD} ipparam wan ifname ${PPP_IF_PRE
 echo "done"
 done
 
-./multiroute.sh ${PPP_NUM}
+./testlink.sh ${PPP_NUM}
+./adjustroute.sh ${PPP_NUM}
 
 #set +x
 exit 0

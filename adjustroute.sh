@@ -1,19 +1,13 @@
-#!/bin/ash
-
 #!/bin/sh
 
-source /etc/profile
 #set -x
 
 if [ $# -eq 1 ]; then
 	PPP_NUM=$1
-else
-	PPP_NUM=4
 fi
 
+SUCCESS_LINKS=$(ip route | grep "${PPP_IF_PREFIX}.*proto" | awk '{print $3}')
 
-
-SUCCESS_LINKS=$(ip route | grep 'pppoe.*pro' | awk '{print $3}')
 
 ROUTECMD="ip route replace default \\
           "
@@ -31,21 +25,21 @@ ip rule add prio 32767 from all lookup default
 
 for i in $(seq -w 01 ${PPP_NUM})
 do
-    echo $SUCCESS_LINKS | grep -q wan${i}
+    echo $SUCCESS_LINKS | grep -q ${PPP_IF_PREFIX}${i}
     if [ $? -ne 0 ]; then
-    	pkill -f pppoe-wan${i}
-    	sleep 1
-    	pkill -9 -f pppoe-wan${i}
+    	pkill -f ${PPP_IF_PREFIX}${i}
     	continue
     fi
     
-    IP_PPP=$(ip route | grep pppoe-wan${i} | awk '{print $9}')
+    IP_PPP=$(ip route | grep ${PPP_IF_PREFIX}${i} | awk '{print $9}')
+
+    echo "manipulating ${PPP_IF_PREFIX}${i} ..."
 
     echo -n "modify routing table ... "
     ip route flush table P${i}
-    ip route add $(ip route show table main | grep "pppoe-wan${i}.*src") table P${i}
-    PPPGATE=$(ip route | grep "pppoe-wan${i}.*src" | awk '{print $1}')
-    ip route add default via ${PPPGATE} dev pppoe-wan${i} table P${i}
+    ip route add $(ip route show table main | grep "${PPP_IF_PREFIX}${i}.*src") table P${i}
+    PPPGATE=$(ip route | grep "${PPP_IF_PREFIX}${i}.*src" | awk '{print $1}')
+    ip route add default via ${PPPGATE} dev ${PPP_IF_PREFIX}${i} table P${i}
     echo "OK"
 
     echo -n "modify routing rule ..."
@@ -53,22 +47,39 @@ do
    #ip rule add prio 30000 from ${IP_PPP} table P${i}
     echo "OK"
 
-    ROUTECMD="${ROUTECMD}nexthop via ${PPPGATE} dev pppoe-wan${i}  weight 1 \\
+    ROUTECMD="${ROUTECMD}nexthop via ${PPPGATE} dev ${PPP_IF_PREFIX}${i}  weight 1 \\
               "
-    #iptables -A INPUT -i pppoe-wan${i} -j ACCEPT
-    #iptables -A FORWARD -i pppoe-wan${i} -j ACCEPT
+
+    #iptables -A FORWARD -i ${PPP_IF_PREFIX}${i} -j ACCEPT
     
-    iptables -t mangle -A POSTROUTING -o pppoe-wan${i}  -m state --state NEW -j CONNMARK --set-mark ${i}
-    iptables -t mangle -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j CONNMARK --restore-mark
-   #iptables -t mangle -A PREROUTING -i pppoe-wan${i}  -m state --state NEW -j CONNMARK --set-mark ${i}
+    echo -n "modify iptables rules ..."
+    iptables -t mangle -A POSTROUTING -o ${PPP_IF_PREFIX}${i}  -m state --state NEW -j CONNMARK --set-mark ${i}
+   #iptables -t mangle -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j CONNMARK --restore-mark
+   #iptables -t mangle -A PREROUTING -i ${PPP_IF_PREFIX}${i}  -m state --state NEW -j CONNMARK --set-mark ${i}
     iptables -t mangle -A PREROUTING -i br-lan -m conntrack --ctstate ESTABLISHED,RELATED -j CONNMARK --restore-mark
 
-    iptables -t nat -A POSTROUTING -o pppoe-wan${i} -j SNAT --to ${IP_PPP}
+    iptables -t nat -A POSTROUTING -o ${PPP_IF_PREFIX}${i} -j SNAT --to ${IP_PPP}
+    echo "OK"
 
 done
 
-eval "${ROUTECMD}" && echo "DONE"
+#echo -n "adding route for DNS ... "
+#for dns_server in ${DNS}
+#do
+#    ip route add ${dns_server} via ${PPPGATE}
+#done
+#echo "OK"
 
 ip route flush cache
 
-set +x
+echo "Adding default route ... "
+eval "${ROUTECMD}" && echo "ALL DONE"
+./light.sh on
+
+echo 
+echo "=================Connections information==========================="
+ip route | grep ${PPP_IF_PREFIX}
+echo "==================================================================="
+
+
+#set +x
