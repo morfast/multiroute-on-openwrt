@@ -3,6 +3,10 @@
 #exit 0
 #set -x
 
+LOCKFILE=/tmp/go.sh.lock
+
+touch ${LOCKFILE}
+
 ./light.sh blink 400 &
 source /etc/profile &> /dev/null
 
@@ -44,6 +48,7 @@ done
 ./testlink.sh ${PPP_NUM}
 ./adjustroute.sh ${PPP_NUM}
 
+rm -f ${LOCKFILE}
 #set +x
 exit 0
 
