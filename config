@@ -1,0 +1,8 @@
+export USERNAME=""
+export PASSWORD=""
+export PPP_NUM=4
+export WAN_IF="eth1.1"
+export MAC_PREFIX="40:16:9F:36:B1"
+export PPP_IF_PREFIX="pppoe"
+export DNS=""
+
