@@ -93,7 +93,7 @@ do
     
     echo -n "modify iptables rules ..."
     iptables -t mangle -A POSTROUTING -o ${PPP_IF_PREFIX}${i}  -m state --state NEW -j CONNMARK --set-mark ${i}
-    iptables -t mangle -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j CONNMARK --restore-mark
+   #iptables -t mangle -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j CONNMARK --restore-mark
    #iptables -t mangle -A PREROUTING -i ${PPP_IF_PREFIX}${i}  -m state --state NEW -j CONNMARK --set-mark ${i}
     iptables -t mangle -A PREROUTING -i br-lan -m conntrack --ctstate ESTABLISHED,RELATED -j CONNMARK --restore-mark
 
@@ -102,12 +102,12 @@ do
 
 done
 
-echo -n "adding route for DNS ... "
-for dns_server in ${DNS}
-do
-    ip route add ${dns_server} via ${PPPGATE}
-done
-echo "OK"
+#echo -n "adding route for DNS ... "
+#for dns_server in ${DNS}
+#do
+#    ip route add ${dns_server} via ${PPPGATE}
+#done
+#echo "OK"
 
 ip route flush cache
 
