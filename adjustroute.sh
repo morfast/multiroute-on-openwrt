@@ -2,6 +2,8 @@
 
 #set -x
 
+source ./config
+
 if [ $# -eq 1 ]; then
 	PPP_NUM=$1
 fi
