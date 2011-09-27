@@ -45,7 +45,7 @@ do
     echo "OK"
 
     echo -n "modify routing rule ..."
-    ip rule add prio 20000 fwmark ${i} table P${i}
+    ip rule add prio 20000 fwmark 0x${i} table P${i}
    #ip rule add prio 30000 from ${IP_PPP} table P${i}
     echo "OK"
 
@@ -55,7 +55,7 @@ do
     #iptables -A FORWARD -i ${PPP_IF_PREFIX}${i} -j ACCEPT
     
     echo -n "modify iptables rules ..."
-    iptables -t mangle -A POSTROUTING -o ${PPP_IF_PREFIX}${i}  -m state --state NEW -j CONNMARK --set-mark ${i}
+    iptables -t mangle -A POSTROUTING -o ${PPP_IF_PREFIX}${i}  -m state --state NEW -j CONNMARK --set-mark 0x${i}
    #iptables -t mangle -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j CONNMARK --restore-mark
    #iptables -t mangle -A PREROUTING -i ${PPP_IF_PREFIX}${i}  -m state --state NEW -j CONNMARK --set-mark ${i}
     iptables -t mangle -A PREROUTING -i br-lan -m conntrack --ctstate ESTABLISHED,RELATED -j CONNMARK --restore-mark
