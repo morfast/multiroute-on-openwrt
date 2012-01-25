@@ -8,7 +8,7 @@
 #include <sys/file.h>
 #include <sys/stat.h>
 #include<unistd.h>
-#include "initppp.h"
+#include "syncppp.h"
 
 int openlockfile()
 {

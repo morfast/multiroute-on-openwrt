@@ -6,7 +6,7 @@
 #include<semaphore.h>
 #include <fcntl.h>
 #include <sys/file.h>
-#include"initppp.h"
+#include"syncppp.h"
 #include <sys/stat.h>
 #include<unistd.h>
 
