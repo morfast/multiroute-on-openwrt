@@ -27,7 +27,7 @@ void lockfile(int fdlock)
         perror("flock lock error");
         exit(1);
     }    
-    fprintf(stderr,"initppp: locked\n");
+    fprintf(stderr,"syncpppinit: locked\n");
 }
 
 void unlockfile(int fdlock)
@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
         ppp_num--;
     }
     unlockfile(fdlock);
-    fprintf(stderr,"\ninitppp: unlocked\n");
+    fprintf(stderr,"\nsyncpppinit: unlocked\n");
 
     return 0;
 }

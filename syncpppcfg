@@ -4,3 +4,6 @@ export PPP_NUM=10
 export WAN_IF="eth1"
 export MAC_PREFIX="00:1F:A3:BE:EA"
 export PPP_IF_PREFIX="pppoe-"
+export LOCKFILE=/tmp/syncppp.lock
+# random or seq
+export BALANCE_METHOD="seq"

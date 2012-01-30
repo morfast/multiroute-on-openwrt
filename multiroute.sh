@@ -3,15 +3,13 @@
 #exit 0
 #set -x
 
-LOCKFILE=/tmp/go.sh.lock
+# read in the config file
+source /etc/syncpppcfg
 
 touch ${LOCKFILE}
 
-./light.sh blink 400 &
+light.sh blink 400 &
 source /etc/profile &> /dev/null
-
-# read in the config file
-source ./config
 
 if [ $# -eq 1 ]; then
 	PPP_NUM=$1
@@ -24,29 +22,29 @@ else
 	exit 1
 fi
 
-./macvlan.sh ${PPP_NUM} 
+macvlan.sh ${PPP_NUM} 
 
 echo -n "Killing existing pppd ..."
 pkill pppd && sleep 3
 pkill -9 pppd && sleep 1
-echo -n "Killing existing initppp ..."
-pkill initppp && sleep 1
-pkill -9 initppp && sleep 1
+echo -n "Killing existing syncpppinit ..."
+pkill syncpppinit && sleep 1
+pkill -9 syncpppinit && sleep 1
 echo "Done"
 
 
-./initppp ${PPP_NUM} &
+syncpppinit ${PPP_NUM} &
 
 for i in $(seq -w 01 $PPP_NUM)
 do
 echo -n "executing pppd for connection ${i} ... "
-./pppd plugin /usr/lib/pppd/2.4.4/rp-pppoe.so mtu 1492 mru 1492 nic-eth${i} persist \
+pppd plugin /usr/lib/pppd/2.4.4/rp-pppoe.so mtu 1492 mru 1492 nic-eth${i} persist \
 usepeerdns user ${USERNAME} password ${PASSWORD} ipparam wan ifname ${PPP_IF_PREFIX}${i} nodetach &
 echo "done"
 done
 
-./testlink.sh ${PPP_NUM}
-./adjustroute.sh ${PPP_NUM}
+testlink.sh ${PPP_NUM}
+adjustroute.sh ${PPP_NUM}
 
 rm -f ${LOCKFILE}
 #set +x

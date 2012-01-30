@@ -1,6 +1,6 @@
 #!/bin/sh
 
-LOCKFILE=/tmp/go.sh.lock
+source /etc/syncpppcfg
 
 set -x
 while :

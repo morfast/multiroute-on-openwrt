@@ -2,18 +2,15 @@
 
 #set -x
 
-source ./config
+source /etc/syncpppcfg
 
 if [ $# -eq 1 ]; then
 	PPP_NUM=$1
 fi
 
 SUCCESS_LINKS=$(ip route | grep "${PPP_IF_PREFIX}.*proto" | awk '{print $3}')
-
-
 ROUTECMD="ip route replace default \\
           "
-          
 iptables -t nat -F
 iptables -t mangle -F
 iptables -t raw -F
@@ -36,7 +33,6 @@ do
     IP_PPP=$(ip route | grep ${PPP_IF_PREFIX}${i} | awk '{print $9}')
 
     echo "manipulating ${PPP_IF_PREFIX}${i} ..."
-
     echo -n "modify routing table ... "
     ip route flush table P${i}
     ip route add $(ip route show table main | grep "${PPP_IF_PREFIX}${i}.*src") table P${i}
@@ -46,43 +42,45 @@ do
 
     echo -n "modify routing rule ..."
     ip rule add prio 20000 fwmark 0x${i} table P${i}
-   #ip rule add prio 30000 from ${IP_PPP} table P${i}
+    ip rule add prio 30000 from ${IP_PPP} table P${i}
     echo "OK"
 
     ROUTECMD="${ROUTECMD}nexthop via ${PPPGATE} dev ${PPP_IF_PREFIX}${i}  weight 1 \\
               "
-
-    #iptables -A FORWARD -i ${PPP_IF_PREFIX}${i} -j ACCEPT
-    
     echo -n "modify iptables rules ..."
-    iptables -t mangle -A POSTROUTING -o ${PPP_IF_PREFIX}${i}  -m state --state NEW -j CONNMARK --set-mark 0x${i}
-   #iptables -t mangle -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j CONNMARK --restore-mark
-   #iptables -t mangle -A PREROUTING -i ${PPP_IF_PREFIX}${i}  -m state --state NEW -j CONNMARK --set-mark ${i}
+    if [ $BALANCE_METHOD == 'random' ]; then
+        iptables -t mangle -A POSTROUTING -o ${PPP_IF_PREFIX}${i}  -m state --state NEW -j CONNMARK --set-mark 0x${i}
+    elif [ $BALANCE_METHOD == 'seq' ]; then
+        iptables -t mangle -I PREROUTING -m state --state NEW -m statistic --mode nth --every 10 --packet $((${i#0}-1)) \
+        -j MARK --set-mark 0x${i}
+    fi
 
     iptables -t nat -A POSTROUTING -o ${PPP_IF_PREFIX}${i} -j SNAT --to ${IP_PPP}
     echo "OK"
 
 done
 
-iptables -t mangle -A PREROUTING -i br-lan -m conntrack --ctstate ESTABLISHED,RELATED -j CONNMARK --restore-mark
-
-#echo -n "adding route for DNS ... "
-#for dns_server in ${DNS}
-#do
-#    ip route add ${dns_server} via ${PPPGATE}
-#done
-#echo "OK"
+iptables -t mangle -I PREROUTING -i br-lan -m conntrack --ctstate ESTABLISHED,RELATED -j CONNMARK --restore-mark
+if [ $BALANCE_METHOD == 'random' ]; then
+    echo -1 > /proc/sys/net/ipv4/rt_cache_rebuild_count
+    iptables -t mangle -I POSTROUTING -m state --state ESTABLISHED,RELATED -j ACCEPT
+    echo "Adding default route ... "
+    eval "${ROUTECMD}"
+elif [ $BALANCE_METHOD == 'seq' ]; then
+    iptables -t mangle -A POSTROUTING -m state --state NEW -j CONNMARK --save-mark
+    echo "Adding default route ... "
+    ip route replace default via ${IP_PPP}
+fi
+echo "ALL DONE"
 
 ip route flush cache
 
-echo "Adding default route ... "
-eval "${ROUTECMD}" && echo "ALL DONE"
-./light.sh on
+pkill -f light.sh
+light.sh on
 
 echo 
 echo "=================Connections information==========================="
 ip route | grep ${PPP_IF_PREFIX}
 echo "==================================================================="
-
 
 #set +x

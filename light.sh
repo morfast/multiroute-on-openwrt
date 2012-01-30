@@ -1,28 +1,20 @@
 #!/bin/sh
 
-exit 0
+arch='tp-link'
+qssgreen="/sys/devices/platform/leds-gpio/leds/${arch}:green:qss"
+sysgreen="/sys/devices/platform/leds-gpio/leds/${arch}:green:system"
 
-qssgreen="/sys/devices/platform/leds-gpio/leds/tl-mr3x20:green:qss"
-sysgreen="/sys/devices/platform/leds-gpio/leds/tl-mr3x20:green:system"
-
-if [ $# -eq 0 ]; then
+if [ $# -eq 0 -o ! -f $qssgreen -o ! -f $sysgreen ]; then
     exit 0
 fi
 
 if [ $1 == "blink" ]; then
-    while :
-    do
-        echo 0 > ${qssgreen}/brightness
-        msleep $2
-        echo 1 > ${qssgreen}/brightness
-        msleep $2
-    done
+    echo heartbeat > ${qssgreen}/trigger
 elif [ $1 == "on" ]; then
+    echo none > ${qssgreen}/trigger
     echo 1 > ${qssgreen}/brightness
 elif [ $1 == "off" ]; then
+    echo none > ${qssgreen}/trigger
     echo 0 > ${qssgreen}/brightness
 fi
-    
-    
-
 
