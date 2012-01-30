@@ -38,7 +38,7 @@ syncpppinit ${PPP_NUM} &
 for i in $(seq -w 01 $PPP_NUM)
 do
 echo -n "executing pppd for connection ${i} ... "
-pppd plugin /usr/lib/pppd/2.4.4/rp-pppoe.so mtu 1492 mru 1492 nic-eth${i} persist \
+pppd plugin rp-pppoe.so mtu 1492 mru 1492 nic-eth${i} persist \
 usepeerdns user ${USERNAME} password ${PASSWORD} ipparam wan ifname ${PPP_IF_PREFIX}${i} nodetach &
 echo "done"
 done
