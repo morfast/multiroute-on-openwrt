@@ -4,7 +4,7 @@
 #set -x
 
 # read in the config file
-source /etc/syncpppcfg
+source /etc/syncppp.conf
 
 touch ${LOCKFILE}
 

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-source /etc/syncpppcfg
+source /etc/syncppp.conf
 
 set -x
 while :

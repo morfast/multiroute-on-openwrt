@@ -2,7 +2,7 @@
 
 #set -x
 
-source /etc/syncpppcfg
+source /etc/syncppp.conf
 
 if [ $# -eq 1 ]; then
 	PPP_NUM=$1
