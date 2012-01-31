@@ -51,7 +51,7 @@ do
     if [ $BALANCE_METHOD == 'random' ]; then
         iptables -t mangle -A POSTROUTING -o ${PPP_IF_PREFIX}${i}  -m state --state NEW -j CONNMARK --set-mark 0x${i}
     elif [ $BALANCE_METHOD == 'seq' ]; then
-        iptables -t mangle -I PREROUTING -m state --state NEW -m statistic --mode nth --every 10 --packet $((${i#0}-1)) \
+        iptables -t mangle -I PREROUTING -m state --state NEW -m statistic --mode nth --every ${PPP_NUM} --packet $((${i#0}-1)) \
         -j MARK --set-mark 0x${i}
     fi
 
