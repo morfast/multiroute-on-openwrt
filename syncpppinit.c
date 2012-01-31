@@ -61,13 +61,10 @@ int main(int argc, char *argv[])
 
     /* create a uniqe key */
     creat(keyfilename, 0755);
-    key = ftok(keyfilename, 4);
-    if (key < 0) {
-        perror("key error\n");
+    if ((key = ftok(keyfilename, PROJ_ID)) == -1) {
+        perror("key error");
         exit(1);
     }
-
-    //printf("the key is: %x\n", key);
 
     shm_id = shmget(key, sizeof(struct semaphores), IPC_CREAT | IPC_EXCL | 0644);
     if (shm_id < 0) {
@@ -75,14 +72,16 @@ int main(int argc, char *argv[])
         shm_id = shmget(key, 1, 0644);
     }
 
-    //printf("shm id: %u\n", shm_id);
-
     if ( (void *)(semphs = shmat(shm_id, 0, 0)) == (void *)-1) {
         perror("shmat error");
         exit(1);
     }
 
-    sem_init(&(semphs->count), 1, 0); /* shared between processes, init 0 */
+    if (sem_init(&(semphs->count), 1, 0) < 0) {
+        perror("sem_init error"); /* shared between processes, init 0 */
+        exit(1);
+    }
+
     fdlock = openlockfile();
     lockfile(fdlock);
 
