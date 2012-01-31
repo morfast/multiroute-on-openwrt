@@ -9,6 +9,7 @@ if [ $# -eq 1 ]; then
 fi
 
 SUCCESS_LINKS=$(ip route | grep "${PPP_IF_PREFIX}.*proto" | awk '{print $3}')
+NLINE=$(ifconfig | grep ${PPP_IF_PREFIX} | wc -l)
 ROUTECMD="ip route replace default \\
           "
 iptables -t nat -F
@@ -21,6 +22,8 @@ iptables -P FORWARD ACCEPT
 ip rule flush
 ip rule add prio 32766 from all lookup main
 ip rule add prio 32767 from all lookup default
+
+local ii=0
 
 for i in $(seq -w 01 ${PPP_NUM})
 do
@@ -51,7 +54,7 @@ do
     if [ $BALANCE_METHOD == 'random' ]; then
         iptables -t mangle -A POSTROUTING -o ${PPP_IF_PREFIX}${i}  -m state --state NEW -j CONNMARK --set-mark 0x${i}
     elif [ $BALANCE_METHOD == 'seq' ]; then
-        iptables -t mangle -I PREROUTING -m state --state NEW -m statistic --mode nth --every ${PPP_NUM} --packet $((${i#0}-1)) \
+        iptables -t mangle -I PREROUTING -m state --state NEW -m statistic --mode nth --every ${NLINE} --packet ${ii} \
         -j MARK --set-mark 0x${i}
     fi
 
