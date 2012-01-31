@@ -4,7 +4,7 @@ arch='tp-link'
 qssgreen="/sys/devices/platform/leds-gpio/leds/${arch}:green:qss"
 sysgreen="/sys/devices/platform/leds-gpio/leds/${arch}:green:system"
 
-if [ $# -eq 0 -o ! -f $qssgreen -o ! -f $sysgreen ]; then
+if [ $# -eq 0 -o ! -d $qssgreen -o ! -d $sysgreen ]; then
     exit 0
 fi
 
