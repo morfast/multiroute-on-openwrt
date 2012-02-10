@@ -1,97 +1,82 @@
-#include<stdio.h>
-#include<sys/types.h>
-#include<sys/shm.h>
-#include<sys/ipc.h>
-#include<stdlib.h>
-#include <semaphore.h>
-#include <fcntl.h>
+#include <stdio.h>
 #include <sys/file.h>
+#include <sys/types.h>
 #include <sys/stat.h>
-#include<unistd.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <unistd.h>
+
 #include "syncppp.h"
-
-int openlockfile()
-{
-    int fdlock;
-
-    if ((fdlock = creat(lockfilename, 0644)) < 0) {
-        perror("fdlock open error");
-        exit(1);
-    }
-    return fdlock;
-}
-
-void lockfile(int fdlock)
-{
-    if (flock(fdlock, LOCK_EX) < 0) {
-        perror("flock lock error");
-        exit(1);
-    }    
-    fprintf(stderr,"syncpppinit: locked\n");
-}
-
-void unlockfile(int fdlock)
-{
-    if (flock(fdlock, LOCK_UN) < 0) {
-        perror("flock unlock error");
-        exit(1);
-    }
-}
-
 
 int main(int argc, char *argv[])
 {
-    int shm_id;
-    int ppp_num;
+    int fd;
     int fdlock;
-    sem_t *p_sem;
-    key_t key;
-    struct semaphores *semphs;
+    int nppp;
+    char buf[1];
 
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <number of pppd>\n", argv[0]);
         exit(1);
     }
-    
-    ppp_num = atoi(argv[1]);
-    if (ppp_num > MAX_PPP_NUM || ppp_num <= 0) {
-        fprintf(stderr, "Number of pppd beyoung limit\n");
+
+    /* read number of pppd from cmdline, check the range */
+    nppp = atoi(argv[1]);
+    if (nppp <=0 || nppp > MAX_PPP_NUM) {
+        fprintf(stderr, "number of pppd should be >= 0 and <= %d\n", MAX_PPP_NUM);
         exit(1);
     }
 
-    /* create a uniqe key */
-    creat(keyfilename, 0755);
-    if ((key = ftok(keyfilename, PROJ_ID)) == -1) {
-        perror("key error");
+    /* lockfile: create, lock */
+    if ((fdlock = creat(lockfilename, 0644)) < 0) {
+        perror("lockfile creat error");
         exit(1);
     }
-
-    shm_id = shmget(key, sizeof(struct semaphores), IPC_CREAT | IPC_EXCL | 0644);
-    if (shm_id < 0) {
-        /* exist */
-        shm_id = shmget(key, 1, 0644);
+    if (flock(fdlock, LOCK_EX) < 0) {
+        fprintf(stderr, "lock error\n");
+    } else {
+        fprintf(stderr, "lock success\n");
     }
 
-    if ( (void *)(semphs = shmat(shm_id, 0, 0)) == (void *)-1) {
-        perror("shmat error");
+    /* npppfile: create, write a 0 */
+    if ((fd = creat(npppfilename, 0644)) < 0) {
+        perror("npppfile creat error");
         exit(1);
     }
-
-    if (sem_init(&(semphs->count), 1, 0) < 0) {
-        perror("sem_init error"); /* shared between processes, init 0 */
+    buf[0] = 0;
+    if (write(fd, buf, 1) != 1) {
+        perror("npppfile write error");
         exit(1);
     }
+    close(fd);
+    if ((fd = open(npppfilename,O_RDONLY)) < 0) {
+        perror("npppfile open error");
+        exit(1);
+    }   
 
-    fdlock = openlockfile();
-    lockfile(fdlock);
 
-    while (ppp_num > 0) {
-        sem_wait(&(semphs->count));
-        fprintf(stderr,"%d ",ppp_num);
-        ppp_num--;
+    /* spin lock: check npppfile */
+    while (1) {
+        if (lseek(fd, 0, SEEK_SET) < 0) {
+            perror("lseek");
+            exit(1);
+        }
+        if (read(fd, buf, 1) < 0) {
+            fprintf(stderr, "read error\n");
+            exit(1);
+        }
+        if (buf[0] >= nppp) {
+            fprintf(stderr, "%d Challenges Recieved, unlock the lockfile\n", nppp);
+            break;
+        } 
     }
-    unlockfile(fdlock);
-    fprintf(stderr,"\nsyncpppinit: unlocked\n");
+
+    /* unlock the lockfile */
+    if (flock(fdlock, LOCK_UN) < 0) {
+        fprintf(stderr, "unlock error\n");
+    } else {
+        fprintf(stderr, "unlock success\n");
+    }
 
     return 0;
 }

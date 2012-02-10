@@ -1,56 +1,56 @@
 #include <stdio.h>
 #include <sys/types.h>
-#include <sys/shm.h>
-#include <sys/ipc.h>
 #include <stdlib.h>
-#include <semaphore.h>
 #include <fcntl.h>
 #include <sys/file.h>
-#include "pppd.h"
-#include "syncppp.h"
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "pppd.h"
+#include "syncppp.h"
+
 int syncppp(void)
 {
-    int shm_id;
-    key_t key;
+    int fd; 
     int fdlock;
-    struct semaphores *semphs;
+    char buf[1];
 
-    if ((key = ftok(keyfilename, PROJ_ID)) == -1) {
-        error("ftok key error");
+    /* open the npppfile, lock the file, read, increment, and write */
+    if ((fd = open(npppfilename,O_RDWR)) < 0) {
+        error("npppfile open error");
+        return -1;
+    }   
+
+    if (flock(fd, LOCK_EX) < 0) {
+        error("lock npppfile error");
+        return -1;
+    }
+    if (read(fd, buf, 1) < 0) {
+        error("npppfile read error");
+        return -1;
+    }
+    buf[0]++;
+    lseek(fd, 0, SEEK_SET);
+    if (write(fd, buf, 1) != 1) {
+        error("npppfile write error");
         return -1;
     }
 
-    if ((shm_id = shmget(key, 1, 0644)) < 0) {
-        error("shmget error");
+    if (flock(fd, LOCK_UN) < 0) {
+        error("npppfile unlock error");
         return -1;
     }
 
-    if ( (void *)(semphs = shmat(shm_id, 0, 0)) == (void *)-1) {
-        error("shmat error");
-        return -1;
-    }
-
-    if ((sem_post(&(semphs->count))) < 0) {
-        error("sem_post error");
-        return -1;
-    }
-
-    shmdt(semphs);
-
-    if ((fdlock = open(lockfilename,O_RDONLY, 0644)) < 0) {
+    /* try to lock the lockfile */
+    if ((fdlock = open(lockfilename, O_RDWR)) < 0) {
         error("lockfile open error");
         return -1;
     }
+    flock(fdlock, LOCK_SH);
 
-    if (flock(fdlock,LOCK_SH) < 0) {
-        error("flock error");
-        return -1;
-    }
+    close(fd);
     close(fdlock);
 
     return 0;
-
 }
+
