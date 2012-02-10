@@ -434,17 +434,8 @@ static void sync_all(const char *filename)
 {
     int fd; 
     int fdlock;
-    int nppp;
     char buf[1];
     FILE *fp;
-
-    fp = fopen("/tmp/ppp_num", "r");
-    if (fp == NULL) {
-        fprintf(stderr, "ppp_num open error\n");
-        exit(1);
-    }   
-    fscanf(fp, "%d", &nppp);
-    fclose(fp);
 
     fdlock = open("/tmp/ppplockfile",O_RDWR);
     fd = open(filename,O_RDWR);
@@ -473,7 +464,7 @@ static void sync_all(const char *filename)
         fprintf(stderr, "unlock error\n");
     }
 
-    flock(fdlock, LOCK_EX);
+    flock(fdlock, LOCK_SH);
 
     close(fd);
     close(fdlock);

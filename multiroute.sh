@@ -28,8 +28,6 @@ do
     	    pkill pppd
     	    pkill -9 pppd
     	    pkill -9 lockfile
-    	    pkill -f light.sh
-    	    /root/light.sh off
     	    exit 1
     	else
     	    pkill lockfile
@@ -82,6 +80,4 @@ done
 
 #ip route del default
 eval "${ROUTECMD}" && echo "DONE"
-pkill -f light.sh
-/root/light.sh on
 

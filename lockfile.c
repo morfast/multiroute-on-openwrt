@@ -6,25 +6,23 @@
 #include <stdlib.h>
 #include<unistd.h>
 
-int main(void)
+int main(int argc, char *argv[])
 {
     int fd;
     int fdlock;
     int nppp;
     char buf[1];
     char *lockfilename = "/tmp/ppplockfile";
-    FILE *fp;
 
-    fp = fopen("/tmp/ppp_num", "r");
-    if (fp == NULL) {
-        fprintf(stderr, "num_ppp open error\n");
+    nppp = atoi(argv[1]);
+
+    if (nppp <=0 || nppp > 30) {
+        perror("nppp input error");
         exit(1);
     }
-    fscanf(fp, "%d", &nppp);
-    fclose(fp);
 
+    fdlock = creat(lockfilename, 0644);
     fd = open("/tmp/ppp_sync",O_RDONLY);
-    fdlock = open(lockfilename, O_RDONLY | O_CREAT, 0644);
 
     if (fd < 0 || fdlock < 0) {
         fprintf(stderr, "open error\n");
