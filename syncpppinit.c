@@ -12,8 +12,9 @@ int main(int argc, char *argv[])
 {
     int fd;
     int fdlock;
-    int nppp;
-    char buf[1];
+    int nppp = 0;
+    int oldnppp = 0;
+    npppvaltype buf;
 
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <number of pppd>\n", argv[0]);
@@ -34,6 +35,7 @@ int main(int argc, char *argv[])
     }
     if (flock(fdlock, LOCK_EX) < 0) {
         fprintf(stderr, "lock error\n");
+        exit(1);
     } else {
         fprintf(stderr, "lock success\n");
     }
@@ -43,8 +45,8 @@ int main(int argc, char *argv[])
         perror("npppfile creat error");
         exit(1);
     }
-    buf[0] = 0;
-    if (write(fd, buf, 1) != 1) {
+    buf = 0;
+    if (write(fd, &buf, sizeof(buf)) != 1) {
         perror("npppfile write error");
         exit(1);
     }
@@ -61,14 +63,18 @@ int main(int argc, char *argv[])
             perror("lseek");
             exit(1);
         }
-        if (read(fd, buf, 1) < 0) {
+        if (read(fd, &buf, sizeof(buf)) < 0) {
             fprintf(stderr, "read error\n");
             exit(1);
         }
-        if (buf[0] >= nppp) {
-            fprintf(stderr, "%d Challenges Recieved, unlock the lockfile\n", nppp);
+        if ((int)buf >= nppp) {
+            fprintf(stderr, "%d Challenges recieved, unlock the lockfile\n", nppp);
             break;
         } 
+        if (oldnppp != (int)buf) {
+            oldnppp = (int)buf;
+            fprintf(stderr, "%d Challenges recieved, waiting for the left %d\n", oldnppp, nppp-oldnppp);
+        }
     }
 
     /* unlock the lockfile */

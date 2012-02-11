@@ -13,7 +13,7 @@ int syncppp(void)
 {
     int fd; 
     int fdlock;
-    char buf[1];
+    npppvaltype buf;
 
     /* open the npppfile, lock the file, read, increment, and write */
     if ((fd = open(npppfilename,O_RDWR)) < 0) {
@@ -25,13 +25,13 @@ int syncppp(void)
         error("lock npppfile error");
         return -1;
     }
-    if (read(fd, buf, 1) < 0) {
+    if (read(fd, &buf, sizeof(buf)) < 0) {
         error("npppfile read error");
         return -1;
     }
-    buf[0]++;
+    buf++;
     lseek(fd, 0, SEEK_SET);
-    if (write(fd, buf, 1) != 1) {
+    if (write(fd, &buf, sizeof(buf)) != 1) {
         error("npppfile write error");
         return -1;
     }
